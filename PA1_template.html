@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Load data.</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+</head>
+
+<body>
+<h1>Load data.</h1>
+
+<p>activity &lt;- read.csv(&ldquo;activity.csv&rdquo;)</p>
+
+<h1>Calculate mean total number of steps taken per day.</h1>
+
+<p>Totalsteps &lt;- tapply(X = activity$steps, INDEX = activity$date, FUN = sum)
+hist(totalsteps, breaks=10, main=&ldquo;Histogram of Total Steps Per Day&rdquo;, col=&ldquo;gray&rdquo;)</p>
+
+<p>#Calculate average daily activity pattern.
+intervalsteps &lt;- tapply(X = activity$steps, INDEX = activity$interval, 
+                         FUN = mean, na.rm = T)
+plot(intervalsteps, type=&ldquo;l&rdquo;, xaxt=&ldquo;n&rdquo;,
+     main=&ldquo;Daily Activity Pattern&rdquo;, 
+     xlab=&ldquo;Time&rdquo;, ylab=&ldquo;Average # of Steps&rdquo;)
+intervalsteps[which(intervalsteps == max(intervalsteps))]</p>
+
+<p>#Assess missing values
+sum(is.na(activity$steps))
+activity2 &lt;- activity
+for (i in 1:nrow(activity2)){
+  if (is.na(activity2[i, 1])){
+    int_nr &lt;- activity2[i, &ldquo;interval&rdquo;]</p>
+
+<p>replacement &lt;- intervalsteps[names(intervalsteps) == int_nr]
+  replacement &lt;- round(replacement)
+  activity2[i, 1] &lt;- replacement
+  }
+}</p>
+
+<h1>Show some rows of the resuting data frame. Previously were NA &ndash;</h1>
+
+<p>activity2[109:120,]</p>
+
+<h1>Check deltas between the files.</h1>
+
+<p>hist(aggregate(steps ~ date, FUN=sum, data=activity2)$steps, breaks=10,
+     main=&ldquo;Histogram of Steps Per Day (Inc. Missing Values)&rdquo;, col = &ldquo;gray&rdquo;,
+     xlab = &ldquo;Steps&rdquo;)</p>
+
+<h1>Deltas in activity patterns with weekends vs. weekdays</h1>
+
+<p>week &lt;- rep(NA, times = nrow(activity2))
+for (i in 1:nrow(activity2)){
+  day &lt;- as.POSIXlt(activity2[i, &ldquo;date&rdquo;])$wday
+  # 0 means sunday, 6 means saturday
+  if (day == 0 | day == 6) week[i] &lt;- &ldquo;Weekend&rdquo;
+  else week[i] &lt;- &ldquo;Weekday&rdquo;
+}
+week &lt;- factor(week) # convert to factor
+activity2 &lt;- cbind(activity2, week) # merge
+str(activity2)</p>
+
+<h1>Plot data.</h1>
+
+<p>library(reshape2)
+library(ggplot2)
+plotdata &lt;- with(activity2, tapply(steps, INDEX = list(interval, week), mean))
+plotdata &lt;- melt(plotdata, id=c(&ldquo;Weekday&rdquo;, &ldquo;Weekend&rdquo;),
+                 varnames = c(&ldquo;Interval&rdquo;, &ldquo;Week&rdquo;), value.name = &ldquo;Steps&rdquo;)
+head(plotdata)
+ggplot(plotdata, aes(Interval, Steps)) + geom_line() + facet_wrap(~Week, nrow=2)</p>
+
+</body>
+
+</html>
